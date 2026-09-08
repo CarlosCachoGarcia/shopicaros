@@ -10,10 +10,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.shopicaros.R
 import com.example.shopicaros.data.model.Product
 
-class ProductAdapter :
-    ListAdapter<Product, ProductAdapter.ProductViewHolder>(
-        ProductDiffCallback()
-    ) {
+class ProductAdapter(
+    private val onProductClick: (Int) -> Unit
+) : ListAdapter<Product, ProductAdapter.ProductViewHolder>(
+    ProductDiffCallback()
+) {
 
     class ProductViewHolder(
         view: View
@@ -48,6 +49,7 @@ class ProductAdapter :
     override fun onBindViewHolder(
         holder: ProductViewHolder,
         position: Int
+
     ) {
 
         val product = getItem(position)
@@ -58,6 +60,9 @@ class ProductAdapter :
             "$${String.format("%.2f", product.price)}"
 
         holder.category.text = product.category
+        holder.itemView.setOnClickListener {
+            onProductClick(product.id)
+        }
     }
 }
 

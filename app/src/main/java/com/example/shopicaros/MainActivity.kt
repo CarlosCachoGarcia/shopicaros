@@ -21,7 +21,9 @@ import com.example.shopicaros.ui.products.ProductViewModelFactory
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
-
+import com.example.shopicaros.ui.detail.ProductDetailActivity
+import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
+import com.example.shopicaros.session.UserRole
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerProducts: RecyclerView
@@ -29,7 +31,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvError: TextView
 
-    private val productAdapter = ProductAdapter()
+    private val productAdapter by lazy {
+
+        ProductAdapter { productId ->
+
+            startActivity(
+                ProductDetailActivity.createIntent(
+                    this,
+                    productId
+                )
+            )
+        }
+    }
 
     private val repository: ProductRepository by lazy {
         ProductRepositoryImpl(
@@ -47,6 +60,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+        val sessionRepository =
+            SharedPreferencesUserSessionRepository(applicationContext)
+
+        sessionRepository.saveRole(UserRole.CLIENTE)
 
         bindViews()
         setupRecyclerView()

@@ -16,4 +16,9 @@ interface FakeStoreApi {
     suspend fun getProductsByCategory(
         @Path("category") category: String
     ): List<Product>
+    @GET("products/{id}")
+    suspend fun getProductById(
+        @Path("id") id: Int
+    ): Product
 }
+

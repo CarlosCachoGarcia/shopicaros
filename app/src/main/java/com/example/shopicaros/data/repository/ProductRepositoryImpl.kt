@@ -20,4 +20,10 @@ class ProductRepositoryImpl(
     ): List<Product> {
         return api.getProductsByCategory(category)
     }
+
+    override suspend fun getProductById(
+        id: Int
+    ): Product {
+        return api.getProductById(id)
+    }
 }
