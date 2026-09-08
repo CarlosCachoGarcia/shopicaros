@@ -4,19 +4,29 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.shopicaros.R
 import com.example.shopicaros.data.model.Product
 
-class ProductAdapter(
-    private var products: List<Product> = emptyList()
-) : RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
+class ProductAdapter :
+    ListAdapter<Product, ProductAdapter.ProductViewHolder>(
+        ProductDiffCallback()
+    ) {
 
-    class ProductViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class ProductViewHolder(
+        view: View
+    ) : RecyclerView.ViewHolder(view) {
 
-        val title: TextView = view.findViewById(R.id.tvTitle)
-        val price: TextView = view.findViewById(R.id.tvPrice)
-        val category: TextView = view.findViewById(R.id.tvCategory)
+        val title: TextView =
+            view.findViewById(R.id.tvTitle)
+
+        val price: TextView =
+            view.findViewById(R.id.tvPrice)
+
+        val category: TextView =
+            view.findViewById(R.id.tvCategory)
     }
 
     override fun onCreateViewHolder(
@@ -26,7 +36,11 @@ class ProductAdapter(
 
         val view = LayoutInflater
             .from(parent.context)
-            .inflate(R.layout.item_product, parent, false)
+            .inflate(
+                R.layout.item_product,
+                parent,
+                false
+            )
 
         return ProductViewHolder(view)
     }
@@ -36,24 +50,31 @@ class ProductAdapter(
         position: Int
     ) {
 
-        val product = products[position]
+        val product = getItem(position)
 
         holder.title.text = product.title
-        holder.price.text = "$${String.format("%.2f", product.price)}"
+
+        holder.price.text =
+            "$${String.format("%.2f", product.price)}"
+
         holder.category.text = product.category
     }
+}
 
-    override fun getItemCount(): Int {
-        return products.size
+private class ProductDiffCallback :
+    DiffUtil.ItemCallback<Product>() {
+
+    override fun areItemsTheSame(
+        oldItem: Product,
+        newItem: Product
+    ): Boolean {
+        return oldItem.id == newItem.id
     }
 
-    fun updateProducts(newProducts: List<Product>) {
-        products = newProducts
-        notifyDataSetChanged()
-    }
-
-    fun clearProducts() {
-        products = emptyList()
-        notifyDataSetChanged()
+    override fun areContentsTheSame(
+        oldItem: Product,
+        newItem: Product
+    ): Boolean {
+        return oldItem == newItem
     }
 }

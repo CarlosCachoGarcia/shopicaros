@@ -4,12 +4,20 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.shopicaros.data.remote.RetrofitClient
+import com.example.shopicaros.data.repository.ProductRepository
+import com.example.shopicaros.data.repository.ProductRepositoryImpl
 import com.example.shopicaros.ui.products.ProductAdapter
+import com.example.shopicaros.ui.products.ProductUiState
+import com.example.shopicaros.ui.products.ProductViewModel
+import com.example.shopicaros.ui.products.ProductViewModelFactory
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
@@ -23,135 +31,152 @@ class MainActivity : AppCompatActivity() {
 
     private val productAdapter = ProductAdapter()
 
+    private val repository: ProductRepository by lazy {
+        ProductRepositoryImpl(
+            RetrofitClient.api
+        )
+    }
+
+    private val viewModel: ProductViewModel by viewModels {
+        ProductViewModelFactory(repository)
+    }
+
+    private var renderedCategories: List<String> = emptyList()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
 
-        recyclerProducts = findViewById(R.id.recyclerProducts)
-        chipGroupCategories = findViewById(R.id.chipGroupCategories)
-        progressBar = findViewById(R.id.progressBar)
-        tvError = findViewById(R.id.tvError)
-
-        recyclerProducts.layoutManager = LinearLayoutManager(this)
-        recyclerProducts.adapter = productAdapter
-
-        loadInitialData()
+        bindViews()
+        setupRecyclerView()
+        observeUiState()
     }
 
-    private fun loadInitialData() {
+    private fun bindViews() {
+
+        recyclerProducts =
+            findViewById(R.id.recyclerProducts)
+
+        chipGroupCategories =
+            findViewById(R.id.chipGroupCategories)
+
+        progressBar =
+            findViewById(R.id.progressBar)
+
+        tvError =
+            findViewById(R.id.tvError)
+    }
+
+    private fun setupRecyclerView() {
+
+        recyclerProducts.layoutManager =
+            LinearLayoutManager(this)
+
+        recyclerProducts.adapter =
+            productAdapter
+    }
+
+    private fun observeUiState() {
 
         lifecycleScope.launch {
 
-            showLoading()
+            repeatOnLifecycle(
+                Lifecycle.State.STARTED
+            ) {
 
-            try {
+                viewModel.uiState.collect { state ->
 
-                val categories = RetrofitClient.api.getCategories()
-
-                createCategoryChips(categories)
-
-                val products = RetrofitClient.api.getProducts()
-
-                productAdapter.updateProducts(products)
-
-            } catch (e: Exception) {
-
-                showError()
-
-            } finally {
-
-                hideLoading()
+                    render(state)
+                }
             }
         }
     }
 
-    private fun createCategoryChips(categories: List<String>) {
+    private fun render(state: ProductUiState) {
+
+        progressBar.visibility =
+            if (state.isLoading) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+
+        tvError.visibility =
+            if (state.errorMessage != null) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+
+        tvError.text =
+            state.errorMessage ?: ""
+
+        productAdapter.submitList(
+            state.products
+        )
+
+        if (renderedCategories != state.categories) {
+
+            renderedCategories = state.categories
+
+            createCategoryChips(
+                state.categories
+            )
+        }
+
+        updateSelectedCategory(
+            state.selectedCategory
+        )
+    }
+
+    private fun createCategoryChips(
+        categories: List<String>
+    ) {
 
         chipGroupCategories.removeAllViews()
 
-        addCategoryChip(
-            category = "Todos",
-            selected = true
-        )
+        val allCategories =
+            listOf(ProductUiState.ALL_CATEGORY) +
+                    categories
 
-        categories.forEach { category ->
+        allCategories.forEach { category ->
 
-            addCategoryChip(
-                category = category,
-                selected = false
-            )
+            val chip = Chip(this).apply {
+
+                text = category
+
+                isCheckable = true
+
+                setOnClickListener {
+
+                    viewModel.selectCategory(
+                        category
+                    )
+                }
+            }
+
+            chipGroupCategories.addView(chip)
         }
     }
 
-    private fun addCategoryChip(
-        category: String,
-        selected: Boolean
+    private fun updateSelectedCategory(
+        selectedCategory: String
     ) {
 
-        val chip = Chip(this)
+        for (
+        index in 0
+                until chipGroupCategories.childCount
+        ) {
 
-        chip.text = category
-        chip.isCheckable = true
-        chip.isChecked = selected
+            val chip =
+                chipGroupCategories.getChildAt(index)
+                        as? Chip
+                    ?: continue
 
-        chip.setOnClickListener {
-
-            filterByCategory(category)
+            chip.isChecked =
+                chip.text.toString() ==
+                        selectedCategory
         }
-
-        chipGroupCategories.addView(chip)
-    }
-
-    private fun filterByCategory(category: String) {
-
-        lifecycleScope.launch {
-
-            /*
-             * La US04 pide limpiar los datos anteriores
-             * mientras llega la nueva petición.
-             */
-            productAdapter.clearProducts()
-
-            showLoading()
-
-            try {
-
-                val products = if (category == "Todos") {
-
-                    RetrofitClient.api.getProducts()
-
-                } else {
-
-                    RetrofitClient.api.getProductsByCategory(category)
-                }
-
-                productAdapter.updateProducts(products)
-
-            } catch (e: Exception) {
-
-                showError()
-
-            } finally {
-
-                hideLoading()
-            }
-        }
-    }
-
-    private fun showLoading() {
-
-        progressBar.visibility = View.VISIBLE
-        tvError.visibility = View.GONE
-    }
-
-    private fun hideLoading() {
-
-        progressBar.visibility = View.GONE
-    }
-
-    private fun showError() {
-
-        tvError.visibility = View.VISIBLE
     }
 }
