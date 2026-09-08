@@ -25,7 +25,8 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
-
+import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
 class ProductDetailActivity : AppCompatActivity() {
 
     private lateinit var contentProduct: View
@@ -70,6 +71,7 @@ class ProductDetailActivity : AppCompatActivity() {
         bindViews()
         setupActions()
         observeUiState()
+        observeEvents()
 
         val productId =
             intent.getIntExtra(
@@ -79,7 +81,49 @@ class ProductDetailActivity : AppCompatActivity() {
 
         viewModel.loadProduct(productId)
     }
+    private fun observeEvents() {
 
+        lifecycleScope.launch {
+
+            repeatOnLifecycle(
+                Lifecycle.State.STARTED
+            ) {
+
+                viewModel.events.collect { event ->
+
+                    when (event) {
+
+                        is ProductDetailEvent.ProductDeleted -> {
+
+                            setResult(
+                                RESULT_OK,
+                                createDeletedResult(
+                                    event.productId
+                                )
+                            )
+
+                            Toast.makeText(
+                                this@ProductDetailActivity,
+                                "Producto eliminado",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            finish()
+                        }
+
+                        is ProductDetailEvent.ShowMessage -> {
+
+                            Toast.makeText(
+                                this@ProductDetailActivity,
+                                event.message,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
     private fun bindViews() {
 
         contentProduct =
@@ -239,18 +283,36 @@ class ProductDetailActivity : AppCompatActivity() {
 
     private fun onEditRequested() {
 
-        /*
-         * Punto de integración con la User Story
-         * encargada de editar productos.
-         */
+        val product =
+            viewModel.uiState.value.product
+                ?: return
+
+        editProductLauncher.launch(
+            EditProductActivity.createIntent(
+                this,
+                product.id
+            )
+        )
     }
 
     private fun onDeleteRequested() {
 
-        /*
-         * Punto de integración con la User Story
-         * encargada de eliminar productos.
-         */
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Eliminar producto")
+            .setMessage(
+                "¿Estás seguro de que deseas eliminar este producto?"
+            )
+            .setNegativeButton(
+                "Cancelar",
+                null
+            )
+            .setPositiveButton(
+                "Eliminar"
+            ) { _, _ ->
+
+                viewModel.deleteProduct()
+            }
+            .show()
     }
 
     private fun showProductUnavailable(
@@ -296,5 +358,122 @@ class ProductDetailActivity : AppCompatActivity() {
                 )
             }
         }
+
+        private const val RESULT_ACTION =
+            "product_result_action"
+
+        private const val ACTION_UPDATED =
+            "updated"
+
+        private const val ACTION_DELETED =
+            "deleted"
+
+        private const val RESULT_PRODUCT_ID =
+            "result_product_id"
+
+        private const val RESULT_TITLE =
+            "result_title"
+
+        private const val RESULT_PRICE =
+            "result_price"
+
+        private const val RESULT_DESCRIPTION =
+            "result_description"
+
+        private const val RESULT_CATEGORY =
+            "result_category"
+
+        private const val RESULT_IMAGE =
+            "result_image"
+
+
+        private fun createDeletedResult(
+            productId: Int
+        ): Intent {
+
+            return Intent().apply {
+
+                putExtra(
+                    RESULT_ACTION,
+                    ACTION_DELETED
+                )
+
+                putExtra(
+                    RESULT_PRODUCT_ID,
+                    productId
+                )
+            }
+        }
+
+        private fun createUpdatedResult(
+            product: Product
+        ): Intent {
+
+            return Intent().apply {
+
+                putExtra(
+                    RESULT_ACTION,
+                    ACTION_UPDATED
+                )
+
+                putExtra(
+                    RESULT_PRODUCT_ID,
+                    product.id
+                )
+
+                putExtra(
+                    RESULT_TITLE,
+                    product.title
+                )
+
+                putExtra(
+                    RESULT_PRICE,
+                    product.price
+                )
+
+                putExtra(
+                    RESULT_DESCRIPTION,
+                    product.description
+                )
+
+                putExtra(
+                    RESULT_CATEGORY,
+                    product.category
+                )
+
+                putExtra(
+                    RESULT_IMAGE,
+                    product.image
+                )
+            }
+        }
     }
+    private val editProductLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+
+            if (result.resultCode == RESULT_OK) {
+
+                val product =
+                    EditProductActivity
+                        .getUpdatedProduct(
+                            result.data
+                        )
+
+                if (product != null) {
+
+                    viewModel.applyUpdatedProduct(
+                        product
+                    )
+
+                    setResult(
+                        RESULT_OK,
+                        createUpdatedResult(
+                            product
+                        )
+                    )
+                }
+            }
+        }
 }

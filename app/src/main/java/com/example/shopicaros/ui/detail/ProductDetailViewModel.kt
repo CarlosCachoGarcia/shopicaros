@@ -10,7 +10,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import com.example.shopicaros.data.model.Product
 class ProductDetailViewModel(
     private val productRepository: ProductRepository,
     private val sessionRepository: UserSessionRepository
@@ -81,4 +84,86 @@ class ProductDetailViewModel(
             }
         }
     }
+    fun applyUpdatedProduct(
+        product: Product
+    ) {
+
+        _uiState.update {
+            it.copy(
+                product = product
+            )
+        }
+    }
+    private val _events =
+        MutableSharedFlow<ProductDetailEvent>()
+
+    val events: SharedFlow<ProductDetailEvent> =
+        _events.asSharedFlow()
+
+    fun deleteProduct() {
+
+        val product =
+            _uiState.value.product
+                ?: return
+
+        if (
+            sessionRepository.getRole()
+            != UserRole.ADMINISTRADOR
+        ) {
+
+            viewModelScope.launch {
+                _events.emit(
+                    ProductDetailEvent.ShowMessage(
+                        "No tienes permisos para eliminar productos."
+                    )
+                )
+            }
+
+            return
+        }
+
+        viewModelScope.launch {
+
+            _uiState.update {
+                it.copy(
+                    isDeleting = true
+                )
+            }
+
+            try {
+
+                productRepository.deleteProduct(
+                    product.id
+                )
+
+                _uiState.update {
+                    it.copy(
+                        product = null,
+                        isDeleting = false
+                    )
+                }
+
+                _events.emit(
+                    ProductDetailEvent.ProductDeleted(
+                        product.id
+                    )
+                )
+
+            } catch (e: Exception) {
+
+                _uiState.update {
+                    it.copy(
+                        isDeleting = false
+                    )
+                }
+
+                _events.emit(
+                    ProductDetailEvent.ShowMessage(
+                        "No fue posible eliminar el producto."
+                    )
+                )
+            }
+        }
+    }
+
 }

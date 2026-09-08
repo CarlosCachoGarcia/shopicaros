@@ -26,4 +26,18 @@ class ProductRepositoryImpl(
     ): Product {
         return api.getProductById(id)
     }
+    override suspend fun updateProduct(
+        product: Product
+    ): Product {
+        return api.updateProduct(
+            product.id,
+            product
+        )
+    }
+
+    override suspend fun deleteProduct(
+        id: Int
+    ): Product {
+        return api.deleteProduct(id)
+    }
 }

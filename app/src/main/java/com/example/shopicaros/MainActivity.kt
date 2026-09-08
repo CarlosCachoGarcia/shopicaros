@@ -22,8 +22,7 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
 import com.example.shopicaros.ui.detail.ProductDetailActivity
-import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
-import com.example.shopicaros.session.UserRole
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerProducts: RecyclerView
@@ -60,10 +59,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-        val sessionRepository =
-            SharedPreferencesUserSessionRepository(applicationContext)
 
-        sessionRepository.saveRole(UserRole.CLIENTE)
 
         bindViews()
         setupRecyclerView()
