@@ -1,13 +1,34 @@
 package com.example.shopicaros.data.remote
 
+import com.example.shopicaros.data.model.LoginRequest
+import com.example.shopicaros.data.model.LoginResponse
 import com.example.shopicaros.data.model.Product
-import retrofit2.http.GET
-import retrofit2.http.Path
+import com.example.shopicaros.data.model.User
 import retrofit2.http.Body
 import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Path
 
 interface FakeStoreApi {
+
+    // -------------------------
+    // AUTENTICACIÓN
+    // -------------------------
+
+    @POST("auth/login")
+    suspend fun login(
+        @Body request: LoginRequest
+    ): LoginResponse
+
+    @GET("users")
+    suspend fun getUsers(): List<User>
+
+
+    // -------------------------
+    // PRODUCTOS
+    // -------------------------
 
     @GET("products")
     suspend fun getProducts(): List<Product>
@@ -19,10 +40,12 @@ interface FakeStoreApi {
     suspend fun getProductsByCategory(
         @Path("category") category: String
     ): List<Product>
+
     @GET("products/{id}")
     suspend fun getProductById(
         @Path("id") id: Int
     ): Product
+
     @PUT("products/{id}")
     suspend fun updateProduct(
         @Path("id") id: Int,
@@ -33,6 +56,4 @@ interface FakeStoreApi {
     suspend fun deleteProduct(
         @Path("id") id: Int
     ): Product
-
 }
-
