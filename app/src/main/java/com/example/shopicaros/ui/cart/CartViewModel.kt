@@ -2,6 +2,7 @@ package com.example.shopicaros.ui.cart
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shopicaros.data.model.CartItem
 import com.example.shopicaros.data.model.Product
 import com.example.shopicaros.data.repository.CartRepository
 import com.example.shopicaros.session.UserRole
@@ -21,7 +22,9 @@ class CartViewModel(
 ) : ViewModel() {
 
     private val _uiState =
-        MutableStateFlow(CartUiState())
+        MutableStateFlow(
+            CartUiState()
+        )
 
     val uiState: StateFlow<CartUiState> =
         _uiState.asStateFlow()
@@ -31,6 +34,16 @@ class CartViewModel(
 
     val events: SharedFlow<CartEvent> =
         _events.asSharedFlow()
+
+    fun loadCart() {
+
+        val items =
+            cartRepository.getLocalItems()
+
+        updateItems(
+            items
+        )
+    }
 
     fun addProduct(
         product: Product,
@@ -42,26 +55,18 @@ class CartViewModel(
             UserRole.CLIENTE
         ) {
 
-            viewModelScope.launch {
-                _events.emit(
-                    CartEvent.ShowMessage(
-                        "No tienes permisos para agregar productos al carrito."
-                    )
-                )
-            }
+            emitMessage(
+                "No tienes permisos para agregar productos al carrito."
+            )
 
             return
         }
 
         if (quantity <= 0) {
 
-            viewModelScope.launch {
-                _events.emit(
-                    CartEvent.ShowMessage(
-                        "La cantidad debe ser mayor a cero."
-                    )
-                )
-            }
+            emitMessage(
+                "La cantidad debe ser mayor a cero."
+            )
 
             return
         }
@@ -71,13 +76,9 @@ class CartViewModel(
 
         if (userId <= 0) {
 
-            viewModelScope.launch {
-                _events.emit(
-                    CartEvent.ShowMessage(
-                        "No se encontró una sesión válida."
-                    )
-                )
-            }
+            emitMessage(
+                "No se encontró una sesión válida."
+            )
 
             return
         }
@@ -103,9 +104,14 @@ class CartViewModel(
                         quantity = quantity
                     )
 
+                val items =
+                    cartRepository.getLocalItems()
+
                 _uiState.update {
                     it.copy(
-                        isAdding = false
+                        isAdding = false,
+                        items = items,
+                        total = calculateTotal(items)
                     )
                 }
 
@@ -129,6 +135,245 @@ class CartViewModel(
                     )
                 )
             }
+        }
+    }
+
+    fun changeQuantity(
+        productId: Int,
+        newQuantity: Int
+    ) {
+
+        if (_uiState.value.isUpdating) {
+            return
+        }
+
+        val userId =
+            sessionRepository.getUserId()
+
+        if (
+            sessionRepository.getRole() !=
+            UserRole.CLIENTE ||
+            userId <= 0
+        ) {
+
+            emitMessage(
+                "No tienes permisos para modificar el carrito."
+            )
+
+            return
+        }
+
+        if (newQuantity <= 0) {
+
+            removeProduct(
+                productId
+            )
+
+            return
+        }
+
+        val previousItems =
+            _uiState.value.items
+
+        val optimisticItems =
+            previousItems.map { item ->
+
+                if (
+                    item.productId ==
+                    productId
+                ) {
+
+                    item.copy(
+                        quantity =
+                            newQuantity
+                    )
+
+                } else {
+
+                    item
+                }
+            }
+
+        _uiState.update {
+            it.copy(
+                items = optimisticItems,
+                total =
+                    calculateTotal(
+                        optimisticItems
+                    ),
+                isUpdating = true
+            )
+        }
+
+        viewModelScope.launch {
+
+            try {
+
+                val updatedItems =
+                    cartRepository
+                        .updateProductQuantity(
+                            userId = userId,
+                            productId = productId,
+                            quantity = newQuantity
+                        )
+
+                _uiState.update {
+                    it.copy(
+                        items = updatedItems,
+                        total =
+                            calculateTotal(
+                                updatedItems
+                            ),
+                        isUpdating = false
+                    )
+                }
+
+            } catch (e: Exception) {
+
+                _uiState.update {
+                    it.copy(
+                        items = previousItems,
+                        total =
+                            calculateTotal(
+                                previousItems
+                            ),
+                        isUpdating = false
+                    )
+                }
+
+                _events.emit(
+                    CartEvent.ShowMessage(
+                        "No fue posible actualizar la cantidad."
+                    )
+                )
+            }
+        }
+    }
+
+    fun removeProduct(
+        productId: Int
+    ) {
+
+        if (_uiState.value.isUpdating) {
+            return
+        }
+
+        val userId =
+            sessionRepository.getUserId()
+
+        if (
+            sessionRepository.getRole() !=
+            UserRole.CLIENTE ||
+            userId <= 0
+        ) {
+
+            emitMessage(
+                "No tienes permisos para modificar el carrito."
+            )
+
+            return
+        }
+
+        val previousItems =
+            _uiState.value.items
+
+        val optimisticItems =
+            previousItems.filterNot {
+                it.productId ==
+                        productId
+            }
+
+        _uiState.update {
+            it.copy(
+                items = optimisticItems,
+                total =
+                    calculateTotal(
+                        optimisticItems
+                    ),
+                isUpdating = true
+            )
+        }
+
+        viewModelScope.launch {
+
+            try {
+
+                val updatedItems =
+                    cartRepository.removeProduct(
+                        userId = userId,
+                        productId = productId
+                    )
+
+                _uiState.update {
+                    it.copy(
+                        items = updatedItems,
+                        total =
+                            calculateTotal(
+                                updatedItems
+                            ),
+                        isUpdating = false
+                    )
+                }
+
+            } catch (e: Exception) {
+
+                _uiState.update {
+                    it.copy(
+                        items = previousItems,
+                        total =
+                            calculateTotal(
+                                previousItems
+                            ),
+                        isUpdating = false
+                    )
+                }
+
+                _events.emit(
+                    CartEvent.ShowMessage(
+                        "No fue posible eliminar el producto del carrito."
+                    )
+                )
+            }
+        }
+    }
+
+    private fun updateItems(
+        items: List<CartItem>
+    ) {
+
+        _uiState.update {
+            it.copy(
+                items = items,
+                total =
+                    calculateTotal(
+                        items
+                    )
+            )
+        }
+    }
+
+    private fun calculateTotal(
+        items: List<CartItem>
+    ): Double {
+
+        return items.sumOf { item ->
+
+            item.price *
+                    item.quantity
+        }
+    }
+
+    private fun emitMessage(
+        message: String
+    ) {
+
+        viewModelScope.launch {
+
+            _events.emit(
+                CartEvent.ShowMessage(
+                    message
+                )
+            )
         }
     }
 }

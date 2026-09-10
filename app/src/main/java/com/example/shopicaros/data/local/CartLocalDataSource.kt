@@ -10,5 +10,20 @@ interface CartLocalDataSource {
         item: CartItem
     ): CartItem
 
+    fun updateQuantity(
+        productId: Int,
+        quantity: Int
+    ): List<CartItem>
+
+    fun removeItem(
+        productId: Int
+    ): List<CartItem>
+
+    fun saveCartId(
+        cartId: Int
+    )
+
+    fun getCartId(): Int?
+
     fun clear()
 }

@@ -112,7 +112,9 @@ class SharedPreferencesCartLocalDataSource(
 
             } else {
 
-                currentItems.add(item)
+                currentItems.add(
+                    item
+                )
 
                 item
             }
@@ -124,11 +126,101 @@ class SharedPreferencesCartLocalDataSource(
         return finalItem
     }
 
+    override fun updateQuantity(
+        productId: Int,
+        quantity: Int
+    ): List<CartItem> {
+
+        val currentItems =
+            getItems()
+                .toMutableList()
+
+        val index =
+            currentItems.indexOfFirst {
+                it.productId == productId
+            }
+
+        if (index < 0) {
+            return currentItems
+        }
+
+        if (quantity <= 0) {
+
+            currentItems.removeAt(
+                index
+            )
+
+        } else {
+
+            val currentItem =
+                currentItems[index]
+
+            currentItems[index] =
+                currentItem.copy(
+                    quantity = quantity
+                )
+        }
+
+        saveItems(
+            currentItems
+        )
+
+        return currentItems
+    }
+
+    override fun removeItem(
+        productId: Int
+    ): List<CartItem> {
+
+        val currentItems =
+            getItems()
+                .filterNot {
+                    it.productId ==
+                            productId
+                }
+
+        saveItems(
+            currentItems
+        )
+
+        return currentItems
+    }
+
+    override fun saveCartId(
+        cartId: Int
+    ) {
+
+        preferences
+            .edit()
+            .putInt(
+                KEY_CART_ID,
+                cartId
+            )
+            .apply()
+    }
+
+    override fun getCartId(): Int? {
+
+        val cartId =
+            preferences.getInt(
+                KEY_CART_ID,
+                -1
+            )
+
+        return if (
+            cartId > 0
+        ) {
+            cartId
+        } else {
+            null
+        }
+    }
+
     override fun clear() {
 
         preferences
             .edit()
-            .remove(KEY_CART)
+            .clear()
             .apply()
     }
 
@@ -191,6 +283,9 @@ class SharedPreferencesCartLocalDataSource(
 
         private const val KEY_CART =
             "cart_items"
+
+        private const val KEY_CART_ID =
+            "cart_id"
 
         private const val KEY_PRODUCT_ID =
             "product_id"

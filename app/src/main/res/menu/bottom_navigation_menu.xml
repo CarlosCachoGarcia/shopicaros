@@ -8,6 +8,11 @@
         android:title="Agregar" />
 
     <item
+        android:id="@+id/navCart"
+        android:icon="@drawable/ic_cart"
+        android:title="Carrito" />
+
+    <item
         android:id="@+id/navLogout"
         android:icon="@drawable/ic_logout"
         android:title="Cerrar sesión" />

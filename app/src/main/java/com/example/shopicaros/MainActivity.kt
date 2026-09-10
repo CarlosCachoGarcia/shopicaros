@@ -19,6 +19,7 @@ import com.example.shopicaros.data.repository.ProductRepositoryImpl
 import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
 import com.example.shopicaros.session.UserRole
 import com.example.shopicaros.session.UserSessionRepository
+import com.example.shopicaros.ui.cart.CartActivity
 import com.example.shopicaros.ui.detail.ProductDetailActivity
 import com.example.shopicaros.ui.login.LoginActivity
 import com.example.shopicaros.ui.products.AddProductActivity
@@ -97,6 +98,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         if (!sessionRepository.isLoggedIn()) {
+
             goToLogin()
             return
         }
@@ -166,41 +168,72 @@ class MainActivity : AppCompatActivity() {
                 R.id.navAddProduct
             )
 
+        val cartItem =
+            bottomNavigation.menu.findItem(
+                R.id.navCart
+            )
+
+        // Solo Administrador puede agregar productos.
         addProductItem.isVisible =
-            role == UserRole.ADMINISTRADOR
+            role ==
+                    UserRole.ADMINISTRADOR
 
-        bottomNavigation.setOnItemSelectedListener { item ->
+        // Solo Cliente puede acceder al carrito.
+        cartItem.isVisible =
+            role ==
+                    UserRole.CLIENTE
 
-            when (item.itemId) {
+        bottomNavigation
+            .setOnItemSelectedListener { item ->
 
-                R.id.navAddProduct -> {
+                when (item.itemId) {
 
-                    if (
-                        sessionRepository.getRole() ==
-                        UserRole.ADMINISTRADOR
-                    ) {
+                    R.id.navAddProduct -> {
 
-                        startActivity(
-                            Intent(
-                                this,
-                                AddProductActivity::class.java
+                        if (
+                            sessionRepository.getRole() ==
+                            UserRole.ADMINISTRADOR
+                        ) {
+
+                            startActivity(
+                                Intent(
+                                    this,
+                                    AddProductActivity::class.java
+                                )
                             )
-                        )
+                        }
+
+                        false
                     }
 
-                    false
+                    R.id.navCart -> {
+
+                        if (
+                            sessionRepository.getRole() ==
+                            UserRole.CLIENTE
+                        ) {
+
+                            startActivity(
+                                Intent(
+                                    this,
+                                    CartActivity::class.java
+                                )
+                            )
+                        }
+
+                        false
+                    }
+
+                    R.id.navLogout -> {
+
+                        sessionViewModel.logout()
+
+                        false
+                    }
+
+                    else -> false
                 }
-
-                R.id.navLogout -> {
-
-                    sessionViewModel.logout()
-
-                    false
-                }
-
-                else -> false
             }
-        }
     }
 
     private fun setupActions() {
@@ -219,16 +252,17 @@ class MainActivity : AppCompatActivity() {
                 Lifecycle.State.STARTED
             ) {
 
-                sessionViewModel.events.collect { event ->
+                sessionViewModel.events
+                    .collect { event ->
 
-                    when (event) {
+                        when (event) {
 
-                        SessionEvent.LoggedOut -> {
+                            SessionEvent.LoggedOut -> {
 
-                            goToLogin()
+                                goToLogin()
+                            }
                         }
                     }
-                }
             }
         }
     }
@@ -245,7 +279,9 @@ class MainActivity : AppCompatActivity() {
             Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TASK
 
-        startActivity(intent)
+        startActivity(
+            intent
+        )
 
         finish()
     }
@@ -253,7 +289,9 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
 
         recyclerProducts.layoutManager =
-            LinearLayoutManager(this)
+            LinearLayoutManager(
+                this
+            )
 
         recyclerProducts.adapter =
             productAdapter
@@ -267,10 +305,13 @@ class MainActivity : AppCompatActivity() {
                 Lifecycle.State.STARTED
             ) {
 
-                viewModel.uiState.collect { state ->
+                viewModel.uiState
+                    .collect { state ->
 
-                    render(state)
-                }
+                        render(
+                            state
+                        )
+                    }
             }
         }
     }
@@ -281,8 +322,11 @@ class MainActivity : AppCompatActivity() {
 
         progressBar.visibility =
             if (state.isLoading) {
+
                 View.VISIBLE
+
             } else {
+
                 View.GONE
             }
 

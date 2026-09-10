@@ -11,6 +11,17 @@ interface CartRepository {
         quantity: Int
     ): CartItem
 
+    suspend fun updateProductQuantity(
+        userId: Int,
+        productId: Int,
+        quantity: Int
+    ): List<CartItem>
+
+    suspend fun removeProduct(
+        userId: Int,
+        productId: Int
+    ): List<CartItem>
+
     fun getLocalItems(): List<CartItem>
 
     fun clearLocalCart()
