@@ -182,7 +182,10 @@ class ProductDetailActivity : AppCompatActivity() {
     ) {
 
         progressDetail.visibility =
-            if (state.isLoading) {
+            if (
+                state.isLoading ||
+                state.isDeleting
+            ) {
                 View.VISIBLE
             } else {
                 View.GONE
@@ -468,11 +471,10 @@ class ProductDetailActivity : AppCompatActivity() {
                     )
 
                     Toast.makeText(
-                        this,
-                        "Producto actualizado (Simulación)",
+                        this@ProductDetailActivity,
+                        "Producto eliminado (Simulación)",
                         Toast.LENGTH_SHORT
                     ).show()
-
                     setResult(
                         RESULT_OK,
                         createUpdatedResult(
