@@ -13,6 +13,9 @@ interface ProductRepository {
     ): List<Product>
 
     suspend fun getProductById(id: Int): Product
+    suspend fun addProduct(
+        product: Product
+    ): Product
     suspend fun updateProduct(
         product: Product
     ): Product

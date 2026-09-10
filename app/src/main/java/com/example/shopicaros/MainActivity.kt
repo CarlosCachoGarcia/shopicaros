@@ -1,7 +1,9 @@
 package com.example.shopicaros
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.viewModels
@@ -14,34 +16,35 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.shopicaros.data.remote.RetrofitClient
 import com.example.shopicaros.data.repository.ProductRepository
 import com.example.shopicaros.data.repository.ProductRepositoryImpl
+import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
+import com.example.shopicaros.session.UserRole
+import com.example.shopicaros.session.UserSessionRepository
+import com.example.shopicaros.ui.detail.ProductDetailActivity
+import com.example.shopicaros.ui.login.LoginActivity
+import com.example.shopicaros.ui.products.AddProductActivity
 import com.example.shopicaros.ui.products.ProductAdapter
 import com.example.shopicaros.ui.products.ProductUiState
 import com.example.shopicaros.ui.products.ProductViewModel
 import com.example.shopicaros.ui.products.ProductViewModelFactory
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
-import kotlinx.coroutines.launch
-import com.example.shopicaros.ui.detail.ProductDetailActivity
-import android.content.Intent
-import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
-import com.example.shopicaros.session.UserSessionRepository
-import com.example.shopicaros.ui.login.LoginActivity
 import com.example.shopicaros.ui.session.SessionEvent
 import com.example.shopicaros.ui.session.SessionViewModel
 import com.example.shopicaros.ui.session.SessionViewModelFactory
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
-import android.widget.LinearLayout
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import kotlinx.coroutines.launch
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerProducts: RecyclerView
     private lateinit var chipGroupCategories: ChipGroup
     private lateinit var progressBar: ProgressBar
     private lateinit var tvError: TextView
-    private lateinit var btnLogout: MaterialButton
-    private lateinit var btnRetry: MaterialButton
     private lateinit var errorContainer: LinearLayout
+    private lateinit var btnRetry: MaterialButton
 
-
+    private lateinit var bottomNavigation: BottomNavigationView
 
     private val sessionRepository: UserSessionRepository by lazy {
 
@@ -56,6 +59,7 @@ class MainActivity : AppCompatActivity() {
             sessionRepository
         )
     }
+
     private val productAdapter by lazy {
 
         ProductAdapter { productId ->
@@ -70,61 +74,139 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val repository: ProductRepository by lazy {
+
         ProductRepositoryImpl(
             RetrofitClient.api
         )
     }
 
     private val viewModel: ProductViewModel by viewModels {
-        ProductViewModelFactory(repository)
+
+        ProductViewModelFactory(
+            repository
+        )
     }
 
-    private var renderedCategories: List<String> = emptyList()
+    private var renderedCategories: List<String> =
+        emptyList()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
+
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_main)
+        if (!sessionRepository.isLoggedIn()) {
+            goToLogin()
+            return
+        }
 
+        setContentView(
+            R.layout.activity_main
+        )
 
         bindViews()
+
         setupRecyclerView()
-        setupSessionActions()
+
+        configureBottomNavigation()
+
+        setupActions()
+
         observeUiState()
+
         observeSessionEvents()
     }
 
     private fun bindViews() {
 
         recyclerProducts =
-            findViewById(R.id.recyclerProducts)
+            findViewById(
+                R.id.recyclerProducts
+            )
 
         chipGroupCategories =
-            findViewById(R.id.chipGroupCategories)
+            findViewById(
+                R.id.chipGroupCategories
+            )
 
         progressBar =
-            findViewById(R.id.progressBar)
+            findViewById(
+                R.id.progressBar
+            )
 
         tvError =
-            findViewById(R.id.tvError)
-
-        btnRetry =
-            findViewById(R.id.btnRetry)
+            findViewById(
+                R.id.tvError
+            )
 
         errorContainer =
-            findViewById(R.id.errorContainer)
-        btnLogout =
-            findViewById(R.id.btnLogout)
+            findViewById(
+                R.id.errorContainer
+            )
 
+        btnRetry =
+            findViewById(
+                R.id.btnRetry
+            )
 
+        bottomNavigation =
+            findViewById(
+                R.id.bottomNavigation
+            )
     }
-    private fun setupSessionActions() {
 
-        btnLogout.setOnClickListener {
-            sessionViewModel.logout()
+    private fun configureBottomNavigation() {
+
+        val role =
+            sessionRepository.getRole()
+
+        val addProductItem =
+            bottomNavigation.menu.findItem(
+                R.id.navAddProduct
+            )
+
+        addProductItem.isVisible =
+            role == UserRole.ADMINISTRADOR
+
+        bottomNavigation.setOnItemSelectedListener { item ->
+
+            when (item.itemId) {
+
+                R.id.navAddProduct -> {
+
+                    if (
+                        sessionRepository.getRole() ==
+                        UserRole.ADMINISTRADOR
+                    ) {
+
+                        startActivity(
+                            Intent(
+                                this,
+                                AddProductActivity::class.java
+                            )
+                        )
+                    }
+
+                    false
+                }
+
+                R.id.navLogout -> {
+
+                    sessionViewModel.logout()
+
+                    false
+                }
+
+                else -> false
+            }
         }
+    }
+
+    private fun setupActions() {
 
         btnRetry.setOnClickListener {
+
             viewModel.retry()
         }
     }
@@ -142,6 +224,7 @@ class MainActivity : AppCompatActivity() {
                     when (event) {
 
                         SessionEvent.LoggedOut -> {
+
                             goToLogin()
                         }
                     }
@@ -149,6 +232,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun goToLogin() {
 
         val intent =
@@ -162,8 +246,10 @@ class MainActivity : AppCompatActivity() {
                     Intent.FLAG_ACTIVITY_CLEAR_TASK
 
         startActivity(intent)
+
         finish()
     }
+
     private fun setupRecyclerView() {
 
         recyclerProducts.layoutManager =
@@ -204,16 +290,28 @@ class MainActivity : AppCompatActivity() {
             state.errorMessage != null
 
         errorContainer.visibility =
-            if (hasError && !state.isLoading) {
+            if (
+                hasError &&
+                !state.isLoading
+            ) {
+
                 View.VISIBLE
+
             } else {
+
                 View.GONE
             }
 
         recyclerProducts.visibility =
-            if (!state.isLoading && !hasError) {
+            if (
+                !state.isLoading &&
+                !hasError
+            ) {
+
                 View.VISIBLE
+
             } else {
+
                 View.GONE
             }
 
@@ -250,26 +348,32 @@ class MainActivity : AppCompatActivity() {
         chipGroupCategories.removeAllViews()
 
         val allCategories =
-            listOf(ProductUiState.ALL_CATEGORY) +
-                    categories
+            listOf(
+                ProductUiState.ALL_CATEGORY
+            ) + categories
 
         allCategories.forEach { category ->
 
-            val chip = Chip(this).apply {
+            val chip =
+                Chip(this).apply {
 
-                text = category
-
-                isCheckable = true
-
-                setOnClickListener {
-
-                    viewModel.selectCategory(
+                    text =
                         category
-                    )
-                }
-            }
 
-            chipGroupCategories.addView(chip)
+                    isCheckable =
+                        true
+
+                    setOnClickListener {
+
+                        viewModel.selectCategory(
+                            category
+                        )
+                    }
+                }
+
+            chipGroupCategories.addView(
+                chip
+            )
         }
     }
 
@@ -283,7 +387,8 @@ class MainActivity : AppCompatActivity() {
         ) {
 
             val chip =
-                chipGroupCategories.getChildAt(index)
+                chipGroupCategories
+                    .getChildAt(index)
                         as? Chip
                     ?: continue
 

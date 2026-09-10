@@ -45,7 +45,10 @@ interface FakeStoreApi {
     suspend fun getProductById(
         @Path("id") id: Int
     ): Product
-
+    @POST("products")
+    suspend fun addProduct(
+        @Body product: Product
+    ): Product
     @PUT("products/{id}")
     suspend fun updateProduct(
         @Path("id") id: Int,

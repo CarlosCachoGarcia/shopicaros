@@ -36,7 +36,7 @@
         </activity>
 
 
-        <!-- US04 - Catálogo -->
+        <!-- US03 / US04 - Catálogo -->
         <activity
             android:name=".MainActivity"
             android:exported="false"
@@ -50,9 +50,16 @@
             android:windowSoftInputMode="adjustResize" />
 
 
-        <!-- US05 - Edición -->
+        <!-- US07 - Edición -->
         <activity
             android:name=".ui.detail.EditProductActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+
+        <!-- US06 - Agregar producto -->
+        <activity
+            android:name=".ui.products.AddProductActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
