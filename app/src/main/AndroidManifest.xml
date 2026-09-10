@@ -70,6 +70,13 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+
+        <!-- US11 - Listado de usuarios -->
+        <activity
+            android:name=".ui.users.UsersActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

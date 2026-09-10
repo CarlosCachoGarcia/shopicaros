@@ -13,6 +13,11 @@
         android:title="Carrito" />
 
     <item
+        android:id="@+id/navUsers"
+        android:icon="@drawable/ic_users"
+        android:title="Usuarios" />
+
+    <item
         android:id="@+id/navLogout"
         android:icon="@drawable/ic_logout"
         android:title="Cerrar sesión" />

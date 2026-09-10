@@ -35,7 +35,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
-
+import com.example.shopicaros.ui.users.UsersActivity
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerProducts: RecyclerView
@@ -173,15 +173,23 @@ class MainActivity : AppCompatActivity() {
                 R.id.navCart
             )
 
-        // Solo Administrador puede agregar productos.
-        addProductItem.isVisible =
-            role ==
-                    UserRole.ADMINISTRADOR
+        val usersItem =
+            bottomNavigation.menu.findItem(
+                R.id.navUsers
+            )
 
-        // Solo Cliente puede acceder al carrito.
+        // Administrador puede agregar productos.
+        addProductItem.isVisible =
+            role == UserRole.ADMINISTRADOR
+
+        // Cliente puede acceder al carrito.
         cartItem.isVisible =
-            role ==
-                    UserRole.CLIENTE
+            role == UserRole.CLIENTE
+
+        // Administrador y Auditor pueden consultar usuarios.
+        usersItem.isVisible =
+            role == UserRole.ADMINISTRADOR ||
+                    role == UserRole.AUDITOR
 
         bottomNavigation
             .setOnItemSelectedListener { item ->
@@ -217,6 +225,29 @@ class MainActivity : AppCompatActivity() {
                                 Intent(
                                     this,
                                     CartActivity::class.java
+                                )
+                            )
+                        }
+
+                        false
+                    }
+
+                    R.id.navUsers -> {
+
+                        val currentRole =
+                            sessionRepository.getRole()
+
+                        if (
+                            currentRole ==
+                            UserRole.ADMINISTRADOR ||
+                            currentRole ==
+                            UserRole.AUDITOR
+                        ) {
+
+                            startActivity(
+                                Intent(
+                                    this,
+                                    UsersActivity::class.java
                                 )
                             )
                         }
