@@ -467,6 +467,12 @@ class ProductDetailActivity : AppCompatActivity() {
                         product
                     )
 
+                    Toast.makeText(
+                        this,
+                        "Producto actualizado (Simulación)",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
                     setResult(
                         RESULT_OK,
                         createUpdatedResult(

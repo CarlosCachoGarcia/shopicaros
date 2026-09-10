@@ -18,7 +18,9 @@ import com.example.shopicaros.data.remote.RetrofitClient
 import com.example.shopicaros.data.repository.ProductRepository
 import com.example.shopicaros.data.repository.ProductRepositoryImpl
 import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
+import com.example.shopicaros.session.UserRole
 import com.example.shopicaros.session.UserSessionRepository
+import com.example.shopicaros.ui.login.LoginActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
@@ -29,6 +31,7 @@ class EditProductActivity : AppCompatActivity() {
     private lateinit var etPrice: TextInputEditText
     private lateinit var etCategory: TextInputEditText
     private lateinit var etDescription: TextInputEditText
+
     private lateinit var progressEdit: ProgressBar
     private lateinit var btnSaveProduct: MaterialButton
 
@@ -56,8 +59,29 @@ class EditProductActivity : AppCompatActivity() {
     override fun onCreate(
         savedInstanceState: Bundle?
     ) {
-
         super.onCreate(savedInstanceState)
+
+        // US07 - Debe existir una sesión válida.
+        if (!sessionRepository.isLoggedIn()) {
+            goToLogin()
+            return
+        }
+
+        // US07 - Solamente Administrador puede editar.
+        if (
+            sessionRepository.getRole() !=
+            UserRole.ADMINISTRADOR
+        ) {
+
+            Toast.makeText(
+                this,
+                "No tienes permisos para editar productos.",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            finish()
+            return
+        }
 
         setContentView(
             R.layout.activity_edit_product
@@ -68,11 +92,26 @@ class EditProductActivity : AppCompatActivity() {
         observeState()
         observeEvents()
 
-        viewModel.loadProduct(
+        val productId =
             intent.getIntExtra(
                 EXTRA_PRODUCT_ID,
                 -1
             )
+
+        if (productId <= 0) {
+
+            Toast.makeText(
+                this,
+                "Producto no válido.",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            finish()
+            return
+        }
+
+        viewModel.loadProduct(
+            productId
         )
     }
 
@@ -102,6 +141,7 @@ class EditProductActivity : AppCompatActivity() {
         findViewById<TextView>(
             R.id.tvEditBack
         ).setOnClickListener {
+
             finish()
         }
 
@@ -110,10 +150,13 @@ class EditProductActivity : AppCompatActivity() {
             viewModel.saveChanges(
                 title =
                     etTitle.text.toString(),
+
                 priceText =
                     etPrice.text.toString(),
+
                 category =
                     etCategory.text.toString(),
+
                 description =
                     etDescription.text.toString()
             )
@@ -201,7 +244,9 @@ class EditProductActivity : AppCompatActivity() {
         product: Product
     ) {
 
-        etTitle.setText(product.title)
+        etTitle.setText(
+            product.title
+        )
 
         etPrice.setText(
             product.price.toString()
@@ -214,6 +259,23 @@ class EditProductActivity : AppCompatActivity() {
         etDescription.setText(
             product.description
         )
+    }
+
+    private fun goToLogin() {
+
+        val intent =
+            Intent(
+                this,
+                LoginActivity::class.java
+            )
+
+        intent.flags =
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+        startActivity(intent)
+
+        finish()
     }
 
     companion object {
@@ -314,23 +376,28 @@ class EditProductActivity : AppCompatActivity() {
 
             return Product(
                 id = id,
+
                 title =
                     intent.getStringExtra(
                         RESULT_TITLE
                     ).orEmpty(),
+
                 price =
                     intent.getDoubleExtra(
                         RESULT_PRICE,
                         0.0
                     ),
+
                 description =
                     intent.getStringExtra(
                         RESULT_DESCRIPTION
                     ).orEmpty(),
+
                 category =
                     intent.getStringExtra(
                         RESULT_CATEGORY
                     ).orEmpty(),
+
                 image =
                     intent.getStringExtra(
                         RESULT_IMAGE
