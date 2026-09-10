@@ -7,5 +7,6 @@ data class ProductDetailUiState(
     val isLoading: Boolean = false,
     val isDeleting: Boolean = false,
     val errorMessage: String? = null,
-    val canManageProduct: Boolean = false
+    val canManageProduct: Boolean = false,
+    val canAddToCart: Boolean = false
 )

@@ -10,7 +10,8 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
-
+import com.example.shopicaros.data.model.CartRequest
+import com.example.shopicaros.data.model.CartResponse
 interface FakeStoreApi {
 
     // -------------------------
@@ -59,4 +60,13 @@ interface FakeStoreApi {
     suspend fun deleteProduct(
         @Path("id") id: Int
     ): Product
+
+    // -------------------------
+// CARRITO
+// -------------------------
+
+    @POST("carts")
+    suspend fun addCart(
+        @Body request: CartRequest
+    ): CartResponse
 }

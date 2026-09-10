@@ -8,6 +8,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -15,18 +17,23 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.bumptech.glide.Glide
 import com.example.shopicaros.R
+import com.example.shopicaros.data.local.SharedPreferencesCartLocalDataSource
 import com.example.shopicaros.data.model.Product
 import com.example.shopicaros.data.remote.RetrofitClient
+import com.example.shopicaros.data.repository.CartRepository
+import com.example.shopicaros.data.repository.CartRepositoryImpl
 import com.example.shopicaros.data.repository.ProductRepository
 import com.example.shopicaros.data.repository.ProductRepositoryImpl
 import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
 import com.example.shopicaros.session.UserSessionRepository
+import com.example.shopicaros.ui.cart.CartEvent
+import com.example.shopicaros.ui.cart.CartViewModel
+import com.example.shopicaros.ui.cart.CartViewModelFactory
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
-import androidx.activity.result.contract.ActivityResultContracts
-import android.widget.Toast
+
 class ProductDetailActivity : AppCompatActivity() {
 
     private lateinit var contentProduct: View
@@ -38,7 +45,17 @@ class ProductDetailActivity : AppCompatActivity() {
     private lateinit var tvProductDescription: TextView
     private lateinit var chipCategory: Chip
 
+    // US09 - Carrito
+    private lateinit var cartActionsContainer: LinearLayout
+    private lateinit var btnDecreaseQuantity: MaterialButton
+    private lateinit var btnIncreaseQuantity: MaterialButton
+    private lateinit var btnAddToCart: MaterialButton
+    private lateinit var tvQuantity: TextView
+
+    // Acciones de administrador
     private lateinit var adminActionsContainer: LinearLayout
+
+    private var quantity = 1
 
     private val productRepository: ProductRepository by lazy {
         ProductRepositoryImpl(
@@ -52,6 +69,19 @@ class ProductDetailActivity : AppCompatActivity() {
         )
     }
 
+    private val cartLocalDataSource by lazy {
+        SharedPreferencesCartLocalDataSource(
+            applicationContext
+        )
+    }
+
+    private val cartRepository: CartRepository by lazy {
+        CartRepositoryImpl(
+            RetrofitClient.api,
+            cartLocalDataSource
+        )
+    }
+
     private val viewModel: ProductDetailViewModel by viewModels {
         ProductDetailViewModelFactory(
             productRepository,
@@ -59,9 +89,18 @@ class ProductDetailActivity : AppCompatActivity() {
         )
     }
 
+    private val cartViewModel: CartViewModel by viewModels {
+        CartViewModelFactory(
+            cartRepository,
+            sessionRepository
+        )
+    }
+
     private var errorDialogShown = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
         super.onCreate(savedInstanceState)
 
         setContentView(
@@ -70,8 +109,12 @@ class ProductDetailActivity : AppCompatActivity() {
 
         bindViews()
         setupActions()
+
         observeUiState()
         observeEvents()
+
+        observeCartState()
+        observeCartEvents()
 
         val productId =
             intent.getIntExtra(
@@ -79,51 +122,11 @@ class ProductDetailActivity : AppCompatActivity() {
                 INVALID_PRODUCT_ID
             )
 
-        viewModel.loadProduct(productId)
+        viewModel.loadProduct(
+            productId
+        )
     }
-    private fun observeEvents() {
 
-        lifecycleScope.launch {
-
-            repeatOnLifecycle(
-                Lifecycle.State.STARTED
-            ) {
-
-                viewModel.events.collect { event ->
-
-                    when (event) {
-
-                        is ProductDetailEvent.ProductDeleted -> {
-
-                            setResult(
-                                RESULT_OK,
-                                createDeletedResult(
-                                    event.productId
-                                )
-                            )
-
-                            Toast.makeText(
-                                this@ProductDetailActivity,
-                                "Producto eliminado",
-                                Toast.LENGTH_SHORT
-                            ).show()
-
-                            finish()
-                        }
-
-                        is ProductDetailEvent.ShowMessage -> {
-
-                            Toast.makeText(
-                                this@ProductDetailActivity,
-                                event.message,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-        }
-    }
     private fun bindViews() {
 
         contentProduct =
@@ -147,6 +150,22 @@ class ProductDetailActivity : AppCompatActivity() {
         chipCategory =
             findViewById(R.id.chipCategory)
 
+        // US09
+        cartActionsContainer =
+            findViewById(R.id.cartActionsContainer)
+
+        btnDecreaseQuantity =
+            findViewById(R.id.btnDecreaseQuantity)
+
+        btnIncreaseQuantity =
+            findViewById(R.id.btnIncreaseQuantity)
+
+        btnAddToCart =
+            findViewById(R.id.btnAddToCart)
+
+        tvQuantity =
+            findViewById(R.id.tvQuantity)
+
         adminActionsContainer =
             findViewById(R.id.adminActionsContainer)
     }
@@ -159,6 +178,44 @@ class ProductDetailActivity : AppCompatActivity() {
 
             finish()
         }
+
+        // US09 - Restar cantidad
+        btnDecreaseQuantity.setOnClickListener {
+
+            if (quantity > 1) {
+
+                quantity--
+
+                updateQuantityText()
+            }
+        }
+
+        // US09 - Aumentar cantidad
+        btnIncreaseQuantity.setOnClickListener {
+
+            quantity++
+
+            updateQuantityText()
+        }
+
+        // US09 - Agregar producto
+        btnAddToCart.setOnClickListener {
+
+            val product =
+                viewModel.uiState.value.product
+                    ?: return@setOnClickListener
+
+            cartViewModel.addProduct(
+                product = product,
+                quantity = quantity
+            )
+        }
+    }
+
+    private fun updateQuantityText() {
+
+        tvQuantity.text =
+            quantity.toString()
     }
 
     private fun observeUiState() {
@@ -172,6 +229,119 @@ class ProductDetailActivity : AppCompatActivity() {
                 viewModel.uiState.collect { state ->
 
                     render(state)
+                }
+            }
+        }
+    }
+
+    private fun observeEvents() {
+
+        lifecycleScope.launch {
+
+            repeatOnLifecycle(
+                Lifecycle.State.STARTED
+            ) {
+
+                viewModel.events.collect { event ->
+
+                    when (event) {
+
+                        is ProductDetailEvent.ProductDeleted -> {
+
+                            setResult(
+                                RESULT_OK,
+                                createDeletedResult(
+                                    event.productId
+                                )
+                            )
+
+                            Toast.makeText(
+                                this@ProductDetailActivity,
+                                "Producto eliminado (Simulación)",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            finish()
+                        }
+
+                        is ProductDetailEvent.ShowMessage -> {
+
+                            Toast.makeText(
+                                this@ProductDetailActivity,
+                                event.message,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun observeCartState() {
+
+        lifecycleScope.launch {
+
+            repeatOnLifecycle(
+                Lifecycle.State.STARTED
+            ) {
+
+                cartViewModel.uiState.collect { state ->
+
+                    btnAddToCart.isEnabled =
+                        !state.isAdding
+
+                    btnDecreaseQuantity.isEnabled =
+                        !state.isAdding
+
+                    btnIncreaseQuantity.isEnabled =
+                        !state.isAdding
+
+                    btnAddToCart.text =
+                        if (state.isAdding) {
+                            "Agregando..."
+                        } else {
+                            "Agregar al carrito"
+                        }
+                }
+            }
+        }
+    }
+
+    private fun observeCartEvents() {
+
+        lifecycleScope.launch {
+
+            repeatOnLifecycle(
+                Lifecycle.State.STARTED
+            ) {
+
+                cartViewModel.events.collect { event ->
+
+                    when (event) {
+
+                        is CartEvent.ProductAdded -> {
+
+                            Toast.makeText(
+                                this@ProductDetailActivity,
+                                "Producto agregado al carrito. Cantidad total: ${event.quantity}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            quantity = 1
+
+                            updateQuantityText()
+                        }
+
+                        is CartEvent.ShowMessage -> {
+
+                            Toast.makeText(
+                                this@ProductDetailActivity,
+                                event.message,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 }
             }
         }
@@ -191,19 +361,29 @@ class ProductDetailActivity : AppCompatActivity() {
                 View.GONE
             }
 
-        val product = state.product
+        val product =
+            state.product
 
         if (product != null) {
 
             contentProduct.visibility =
                 View.VISIBLE
 
-            renderProduct(product)
+            renderProduct(
+                product
+            )
+
+            // US09
+            renderCartActions(
+                canAddToCart =
+                    state.canAddToCart
+            )
 
             renderAdminActions(
                 canManageProduct =
                     state.canManageProduct
             )
+
         } else {
 
             contentProduct.visibility =
@@ -243,6 +423,19 @@ class ProductDetailActivity : AppCompatActivity() {
             .with(this)
             .load(product.image)
             .into(ivProduct)
+    }
+
+    // US09
+    private fun renderCartActions(
+        canAddToCart: Boolean
+    ) {
+
+        cartActionsContainer.visibility =
+            if (canAddToCart) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
     }
 
     private fun renderAdminActions(
@@ -301,7 +494,9 @@ class ProductDetailActivity : AppCompatActivity() {
     private fun onDeleteRequested() {
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("Eliminar producto")
+            .setTitle(
+                "Eliminar producto"
+            )
             .setMessage(
                 "¿Estás seguro de que deseas eliminar este producto?"
             )
@@ -326,8 +521,12 @@ class ProductDetailActivity : AppCompatActivity() {
             .setTitle(
                 "Producto no disponible"
             )
-            .setMessage(message)
-            .setCancelable(false)
+            .setMessage(
+                message
+            )
+            .setCancelable(
+                false
+            )
             .setPositiveButton(
                 "Regresar"
             ) { _, _ ->
@@ -337,6 +536,46 @@ class ProductDetailActivity : AppCompatActivity() {
             .show()
     }
 
+    private val editProductLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+
+            if (
+                result.resultCode ==
+                RESULT_OK
+            ) {
+
+                val product =
+                    EditProductActivity
+                        .getUpdatedProduct(
+                            result.data
+                        )
+
+                if (
+                    product != null
+                ) {
+
+                    viewModel.applyUpdatedProduct(
+                        product
+                    )
+
+                    Toast.makeText(
+                        this@ProductDetailActivity,
+                        "Producto actualizado (Simulación)",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    setResult(
+                        RESULT_OK,
+                        createUpdatedResult(
+                            product
+                        )
+                    )
+                }
+            }
+        }
+
     companion object {
 
         private const val EXTRA_PRODUCT_ID =
@@ -344,23 +583,6 @@ class ProductDetailActivity : AppCompatActivity() {
 
         private const val INVALID_PRODUCT_ID =
             -1
-
-        fun createIntent(
-            context: Context,
-            productId: Int
-        ): Intent {
-
-            return Intent(
-                context,
-                ProductDetailActivity::class.java
-            ).apply {
-
-                putExtra(
-                    EXTRA_PRODUCT_ID,
-                    productId
-                )
-            }
-        }
 
         private const val RESULT_ACTION =
             "product_result_action"
@@ -389,6 +611,22 @@ class ProductDetailActivity : AppCompatActivity() {
         private const val RESULT_IMAGE =
             "result_image"
 
+        fun createIntent(
+            context: Context,
+            productId: Int
+        ): Intent {
+
+            return Intent(
+                context,
+                ProductDetailActivity::class.java
+            ).apply {
+
+                putExtra(
+                    EXTRA_PRODUCT_ID,
+                    productId
+                )
+            }
+        }
 
         private fun createDeletedResult(
             productId: Int
@@ -451,37 +689,4 @@ class ProductDetailActivity : AppCompatActivity() {
             }
         }
     }
-    private val editProductLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-
-            if (result.resultCode == RESULT_OK) {
-
-                val product =
-                    EditProductActivity
-                        .getUpdatedProduct(
-                            result.data
-                        )
-
-                if (product != null) {
-
-                    viewModel.applyUpdatedProduct(
-                        product
-                    )
-
-                    Toast.makeText(
-                        this@ProductDetailActivity,
-                        "Producto eliminado (Simulación)",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    setResult(
-                        RESULT_OK,
-                        createUpdatedResult(
-                            product
-                        )
-                    )
-                }
-            }
-        }
 }

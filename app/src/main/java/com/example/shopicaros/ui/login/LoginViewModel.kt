@@ -105,9 +105,9 @@ class LoginViewModel(
                     UserRole.fromUserId(
                         result.userId
                     )
-
                 sessionRepository.saveSession(
                     token = result.token,
+                    userId = result.userId,
                     role = role
                 )
 

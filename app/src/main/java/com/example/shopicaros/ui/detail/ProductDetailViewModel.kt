@@ -2,44 +2,59 @@ package com.example.shopicaros.ui.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shopicaros.data.model.Product
 import com.example.shopicaros.data.repository.ProductRepository
 import com.example.shopicaros.session.UserRole
 import com.example.shopicaros.session.UserSessionRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import com.example.shopicaros.data.model.Product
+
 class ProductDetailViewModel(
     private val productRepository: ProductRepository,
     private val sessionRepository: UserSessionRepository
 ) : ViewModel() {
 
     private val _uiState =
-        MutableStateFlow(ProductDetailUiState())
+        MutableStateFlow(
+            ProductDetailUiState()
+        )
 
     val uiState: StateFlow<ProductDetailUiState> =
         _uiState.asStateFlow()
 
-    fun loadProduct(productId: Int) {
+    private val _events =
+        MutableSharedFlow<ProductDetailEvent>()
+
+    val events: SharedFlow<ProductDetailEvent> =
+        _events.asSharedFlow()
+
+    fun loadProduct(
+        productId: Int
+    ) {
 
         if (productId <= 0) {
 
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    errorMessage = "Producto no disponible"
+                    errorMessage =
+                        "Producto no disponible"
                 )
             }
 
             return
         }
 
-        if (_uiState.value.product?.id == productId) {
+        if (
+            _uiState.value.product?.id ==
+            productId
+        ) {
             return
         }
 
@@ -55,19 +70,27 @@ class ProductDetailViewModel(
             try {
 
                 val product =
-                    productRepository.getProductById(
-                        productId
-                    )
+                    productRepository
+                        .getProductById(
+                            productId
+                        )
 
                 val role =
-                    sessionRepository.getRole()
+                    sessionRepository
+                        .getRole()
 
                 _uiState.update {
                     it.copy(
                         product = product,
                         isLoading = false,
+
                         canManageProduct =
-                            role == UserRole.ADMINISTRADOR
+                            role ==
+                                    UserRole.ADMINISTRADOR,
+
+                        canAddToCart =
+                            role ==
+                                    UserRole.CLIENTE
                     )
                 }
 
@@ -84,6 +107,7 @@ class ProductDetailViewModel(
             }
         }
     }
+
     fun applyUpdatedProduct(
         product: Product
     ) {
@@ -94,11 +118,6 @@ class ProductDetailViewModel(
             )
         }
     }
-    private val _events =
-        MutableSharedFlow<ProductDetailEvent>()
-
-    val events: SharedFlow<ProductDetailEvent> =
-        _events.asSharedFlow()
 
     fun deleteProduct() {
 
@@ -112,10 +131,12 @@ class ProductDetailViewModel(
         ) {
 
             viewModelScope.launch {
+
                 _events.emit(
-                    ProductDetailEvent.ShowMessage(
-                        "No tienes permisos para eliminar productos."
-                    )
+                    ProductDetailEvent
+                        .ShowMessage(
+                            "No tienes permisos para eliminar productos."
+                        )
                 )
             }
 
@@ -144,9 +165,10 @@ class ProductDetailViewModel(
                 }
 
                 _events.emit(
-                    ProductDetailEvent.ProductDeleted(
-                        product.id
-                    )
+                    ProductDetailEvent
+                        .ProductDeleted(
+                            product.id
+                        )
                 )
 
             } catch (e: Exception) {
@@ -158,12 +180,12 @@ class ProductDetailViewModel(
                 }
 
                 _events.emit(
-                    ProductDetailEvent.ShowMessage(
-                        "No fue posible eliminar el producto."
-                    )
+                    ProductDetailEvent
+                        .ShowMessage(
+                            "No fue posible eliminar el producto."
+                        )
                 )
             }
         }
     }
-
 }

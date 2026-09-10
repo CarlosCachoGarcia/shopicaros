@@ -14,12 +14,14 @@ class SharedPreferencesUserSessionRepository(
 
     override fun saveSession(
         token: String,
+        userId: Int,
         role: UserRole
     ) {
 
         preferences
             .edit()
             .putString(KEY_TOKEN, token)
+            .putInt(KEY_USER_ID, userId)
             .putString(KEY_ROLE, role.value)
             .apply()
     }
@@ -29,6 +31,14 @@ class SharedPreferencesUserSessionRepository(
         return preferences.getString(
             KEY_TOKEN,
             null
+        )
+    }
+
+    override fun getUserId(): Int {
+
+        return preferences.getInt(
+            KEY_USER_ID,
+            -1
         )
     }
 
@@ -47,7 +57,8 @@ class SharedPreferencesUserSessionRepository(
 
     override fun isLoggedIn(): Boolean {
 
-        return !getToken().isNullOrBlank()
+        return !getToken().isNullOrBlank() &&
+                getUserId() > 0
     }
 
     override fun clearSession() {
@@ -65,6 +76,9 @@ class SharedPreferencesUserSessionRepository(
 
         private const val KEY_TOKEN =
             "auth_token"
+
+        private const val KEY_USER_ID =
+            "user_id"
 
         private const val KEY_ROLE =
             "user_role"
