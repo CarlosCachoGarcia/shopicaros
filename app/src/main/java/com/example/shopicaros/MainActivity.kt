@@ -19,6 +19,7 @@ import com.example.shopicaros.data.repository.ProductRepositoryImpl
 import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
 import com.example.shopicaros.session.UserRole
 import com.example.shopicaros.session.UserSessionRepository
+import com.example.shopicaros.ui.audit.CartAuditActivity
 import com.example.shopicaros.ui.cart.CartActivity
 import com.example.shopicaros.ui.detail.ProductDetailActivity
 import com.example.shopicaros.ui.login.LoginActivity
@@ -30,12 +31,13 @@ import com.example.shopicaros.ui.products.ProductViewModelFactory
 import com.example.shopicaros.ui.session.SessionEvent
 import com.example.shopicaros.ui.session.SessionViewModel
 import com.example.shopicaros.ui.session.SessionViewModelFactory
+import com.example.shopicaros.ui.users.UsersActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
-import com.example.shopicaros.ui.users.UsersActivity
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerProducts: RecyclerView
@@ -178,6 +180,11 @@ class MainActivity : AppCompatActivity() {
                 R.id.navUsers
             )
 
+        val auditItem =
+            bottomNavigation.menu.findItem(
+                R.id.navAudit
+            )
+
         // Administrador puede agregar productos.
         addProductItem.isVisible =
             role == UserRole.ADMINISTRADOR
@@ -188,6 +195,11 @@ class MainActivity : AppCompatActivity() {
 
         // Administrador y Auditor pueden consultar usuarios.
         usersItem.isVisible =
+            role == UserRole.ADMINISTRADOR ||
+                    role == UserRole.AUDITOR
+
+        // Administrador y Auditor pueden consultar auditoría.
+        auditItem.isVisible =
             role == UserRole.ADMINISTRADOR ||
                     role == UserRole.AUDITOR
 
@@ -248,6 +260,29 @@ class MainActivity : AppCompatActivity() {
                                 Intent(
                                     this,
                                     UsersActivity::class.java
+                                )
+                            )
+                        }
+
+                        false
+                    }
+
+                    R.id.navAudit -> {
+
+                        val currentRole =
+                            sessionRepository.getRole()
+
+                        if (
+                            currentRole ==
+                            UserRole.ADMINISTRADOR ||
+                            currentRole ==
+                            UserRole.AUDITOR
+                        ) {
+
+                            startActivity(
+                                Intent(
+                                    this,
+                                    CartAuditActivity::class.java
                                 )
                             )
                         }

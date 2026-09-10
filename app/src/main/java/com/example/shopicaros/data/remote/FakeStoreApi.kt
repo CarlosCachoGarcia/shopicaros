@@ -84,4 +84,7 @@ interface FakeStoreApi {
     suspend fun deleteCart(
         @Path("id") cartId: Int
     ): CartResponse
+
+    @GET("carts")
+    suspend fun getCarts(): List<CartResponse>
 }

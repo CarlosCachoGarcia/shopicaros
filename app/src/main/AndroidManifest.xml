@@ -77,6 +77,13 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+
+        <!-- US12 - Auditoría de carritos -->
+        <activity
+            android:name=".ui.audit.CartAuditActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

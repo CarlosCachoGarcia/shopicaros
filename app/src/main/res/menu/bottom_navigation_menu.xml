@@ -18,6 +18,11 @@
         android:title="Usuarios" />
 
     <item
+        android:id="@+id/navAudit"
+        android:icon="@drawable/ic_audit"
+        android:title="Auditoría" />
+
+    <item
         android:id="@+id/navLogout"
         android:icon="@drawable/ic_logout"
         android:title="Cerrar sesión" />
