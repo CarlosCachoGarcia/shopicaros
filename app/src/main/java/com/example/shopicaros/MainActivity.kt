@@ -22,6 +22,14 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
 import com.example.shopicaros.ui.detail.ProductDetailActivity
+import android.content.Intent
+import com.example.shopicaros.session.SharedPreferencesUserSessionRepository
+import com.example.shopicaros.session.UserSessionRepository
+import com.example.shopicaros.ui.login.LoginActivity
+import com.example.shopicaros.ui.session.SessionEvent
+import com.example.shopicaros.ui.session.SessionViewModel
+import com.example.shopicaros.ui.session.SessionViewModelFactory
+import com.google.android.material.button.MaterialButton
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,7 +37,24 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chipGroupCategories: ChipGroup
     private lateinit var progressBar: ProgressBar
     private lateinit var tvError: TextView
+    private lateinit var btnLogout: MaterialButton
 
+
+
+
+    private val sessionRepository: UserSessionRepository by lazy {
+
+        SharedPreferencesUserSessionRepository(
+            applicationContext
+        )
+    }
+
+    private val sessionViewModel: SessionViewModel by viewModels {
+
+        SessionViewModelFactory(
+            sessionRepository
+        )
+    }
     private val productAdapter by lazy {
 
         ProductAdapter { productId ->
@@ -63,7 +88,9 @@ class MainActivity : AppCompatActivity() {
 
         bindViews()
         setupRecyclerView()
+        setupSessionActions()
         observeUiState()
+        observeSessionEvents()
     }
 
     private fun bindViews() {
@@ -79,8 +106,54 @@ class MainActivity : AppCompatActivity() {
 
         tvError =
             findViewById(R.id.tvError)
+        btnLogout =
+            findViewById(R.id.btnLogout)
+
+
+    }
+    private fun setupSessionActions() {
+
+        btnLogout.setOnClickListener {
+
+            sessionViewModel.logout()
+        }
     }
 
+    private fun observeSessionEvents() {
+
+        lifecycleScope.launch {
+
+            repeatOnLifecycle(
+                Lifecycle.State.STARTED
+            ) {
+
+                sessionViewModel.events.collect { event ->
+
+                    when (event) {
+
+                        SessionEvent.LoggedOut -> {
+                            goToLogin()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private fun goToLogin() {
+
+        val intent =
+            Intent(
+                this,
+                LoginActivity::class.java
+            )
+
+        intent.flags =
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+        startActivity(intent)
+        finish()
+    }
     private fun setupRecyclerView() {
 
         recyclerProducts.layoutManager =

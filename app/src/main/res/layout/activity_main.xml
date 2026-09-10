@@ -9,15 +9,41 @@
     android:background="#F7F8FA"
     android:paddingTop="20dp">
 
-    <TextView
+    <!-- ENCABEZADO -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="20dp"
-        android:text="Catálogo"
-        android:textColor="#171717"
-        android:textSize="30sp"
-        android:textStyle="bold" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp">
 
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Catálogo"
+            android:textColor="#171717"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogout"
+            android:layout_width="140dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="12dp"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="Cerrar sesión"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:backgroundTint="#6200EE"
+            app:cornerRadius="14dp" />
+
+    </LinearLayout>
+
+    <!-- SUBTÍTULO -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -27,12 +53,13 @@
         android:textColor="#737373"
         android:textSize="15sp" />
 
+    <!-- FILTROS -->
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="18dp"
-        android:scrollbars="none"
-        android:fillViewport="false">
+        android:fillViewport="false"
+        android:scrollbars="none">
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/chipGroupCategories"
@@ -41,11 +68,12 @@
             android:paddingHorizontal="16dp"
             android:paddingVertical="6dp"
             app:chipSpacingHorizontal="8dp"
-            app:singleSelection="true"
-            app:selectionRequired="true" />
+            app:selectionRequired="true"
+            app:singleSelection="true" />
 
     </HorizontalScrollView>
 
+    <!-- CARGANDO -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="48dp"
@@ -54,6 +82,7 @@
         android:layout_marginTop="24dp"
         android:visibility="gone" />
 
+    <!-- ERROR -->
     <TextView
         android:id="@+id/tvError"
         android:layout_width="match_parent"
@@ -65,12 +94,13 @@
         android:textSize="15sp"
         android:visibility="gone" />
 
+    <!-- PRODUCTOS -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerProducts"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
         android:layout_marginTop="8dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
         android:paddingBottom="20dp" />
 
