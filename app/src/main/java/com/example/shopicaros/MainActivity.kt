@@ -30,7 +30,7 @@ import com.example.shopicaros.ui.session.SessionEvent
 import com.example.shopicaros.ui.session.SessionViewModel
 import com.example.shopicaros.ui.session.SessionViewModelFactory
 import com.google.android.material.button.MaterialButton
-
+import android.widget.LinearLayout
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerProducts: RecyclerView
@@ -38,7 +38,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvError: TextView
     private lateinit var btnLogout: MaterialButton
-
+    private lateinit var btnRetry: MaterialButton
+    private lateinit var errorContainer: LinearLayout
 
 
 
@@ -106,6 +107,12 @@ class MainActivity : AppCompatActivity() {
 
         tvError =
             findViewById(R.id.tvError)
+
+        btnRetry =
+            findViewById(R.id.btnRetry)
+
+        errorContainer =
+            findViewById(R.id.errorContainer)
         btnLogout =
             findViewById(R.id.btnLogout)
 
@@ -114,8 +121,11 @@ class MainActivity : AppCompatActivity() {
     private fun setupSessionActions() {
 
         btnLogout.setOnClickListener {
-
             sessionViewModel.logout()
+        }
+
+        btnRetry.setOnClickListener {
+            viewModel.retry()
         }
     }
 
@@ -179,7 +189,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun render(state: ProductUiState) {
+    private fun render(
+        state: ProductUiState
+    ) {
 
         progressBar.visibility =
             if (state.isLoading) {
@@ -188,23 +200,38 @@ class MainActivity : AppCompatActivity() {
                 View.GONE
             }
 
-        tvError.visibility =
-            if (state.errorMessage != null) {
+        val hasError =
+            state.errorMessage != null
+
+        errorContainer.visibility =
+            if (hasError && !state.isLoading) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+
+        recyclerProducts.visibility =
+            if (!state.isLoading && !hasError) {
                 View.VISIBLE
             } else {
                 View.GONE
             }
 
         tvError.text =
-            state.errorMessage ?: ""
+            state.errorMessage
+                ?: "No se pudieron cargar los productos."
 
         productAdapter.submitList(
             state.products
         )
 
-        if (renderedCategories != state.categories) {
+        if (
+            renderedCategories !=
+            state.categories
+        ) {
 
-            renderedCategories = state.categories
+            renderedCategories =
+                state.categories
 
             createCategoryChips(
                 state.categories

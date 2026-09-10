@@ -13,8 +13,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:paddingHorizontal="20dp">
 
         <TextView
@@ -31,6 +31,7 @@
             android:layout_width="140dp"
             android:layout_height="52dp"
             android:layout_marginStart="12dp"
+            android:backgroundTint="#6200EE"
             android:gravity="center"
             android:paddingHorizontal="12dp"
             android:text="Cerrar sesión"
@@ -38,7 +39,6 @@
             android:textColor="@android:color/white"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:backgroundTint="#6200EE"
             app:cornerRadius="14dp" />
 
     </LinearLayout>
@@ -53,7 +53,7 @@
         android:textColor="#737373"
         android:textSize="15sp" />
 
-    <!-- FILTROS -->
+    <!-- FILTROS US04 -->
     <HorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -73,35 +73,63 @@
 
     </HorizontalScrollView>
 
-    <!-- CARGANDO -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="24dp"
-        android:visibility="gone" />
-
-    <!-- ERROR -->
-    <TextView
-        android:id="@+id/tvError"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="20dp"
-        android:gravity="center"
-        android:text="No se pudieron cargar los productos"
-        android:textColor="#B3261E"
-        android:textSize="15sp"
-        android:visibility="gone" />
-
-    <!-- PRODUCTOS -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerProducts"
+    <!-- CONTENIDO DEL CATÁLOGO -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingBottom="20dp" />
+        android:layout_weight="1">
+
+        <!-- PRODUCTOS -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerProducts"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingTop="8dp"
+            android:paddingBottom="20dp" />
+
+        <!-- CARGANDO -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <!-- ERROR -->
+        <LinearLayout
+            android:id="@+id/errorContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="28dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvError"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="No se pudieron cargar los productos"
+                android:textColor="#B3261E"
+                android:textSize="16sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRetry"
+                android:layout_width="160dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#6200EE"
+                android:text="Reintentar"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                app:cornerRadius="14dp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
 
 </LinearLayout>
