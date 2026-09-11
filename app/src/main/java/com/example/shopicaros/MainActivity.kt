@@ -199,9 +199,7 @@ class MainActivity : AppCompatActivity() {
                     role == UserRole.AUDITOR
 
         // Administrador y Auditor pueden consultar auditoría.
-        auditItem.isVisible =
-            role == UserRole.ADMINISTRADOR ||
-                    role == UserRole.AUDITOR
+        auditItem.isVisible = role == UserRole.AUDITOR
 
         bottomNavigation
             .setOnItemSelectedListener { item ->
